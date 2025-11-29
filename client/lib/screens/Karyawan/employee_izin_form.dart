@@ -90,7 +90,7 @@ class _EmployeeIzinFormState extends State<EmployeeIzinForm> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://192.168.67.15:8000/api/letters"),
+        Uri.parse("https://bae60a8d3034.ngrok-free.app/api/letters"),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
