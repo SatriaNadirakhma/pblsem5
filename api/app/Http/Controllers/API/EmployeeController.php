@@ -18,6 +18,7 @@ class EmployeeController extends Controller
         return ResponseWrapper::make(
             "Daftar karyawan berhasil diambil",
             200,
+            true,
             ["employees" => $employees],
             null
         );
@@ -34,6 +35,7 @@ class EmployeeController extends Controller
             return ResponseWrapper::make(
                 "Karyawan tidak ditemukan",
                 404,
+                false,
                 null,
                 null
             );
@@ -42,6 +44,7 @@ class EmployeeController extends Controller
         return ResponseWrapper::make(
             "Data karyawan berhasil ditemukan",
             200,
+            true,
             ["employee" => $employee],
             null
         );

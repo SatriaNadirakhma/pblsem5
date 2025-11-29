@@ -8,6 +8,7 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class EmployeeManagementController extends Controller
@@ -24,6 +25,7 @@ class EmployeeManagementController extends Controller
             return ResponseWrapper::make(
                 "Karyawan tidak ditemukan",
                 404,
+                false,
                 null,
                 null
             );
@@ -34,18 +36,19 @@ class EmployeeManagementController extends Controller
         //     return ResponseWrapper::make(
         //         "Anda tidak memiliki akses admin",
         //         403,
+        //         false,
         //         null,
         //         null
         //     );
         // }
 
-        $validated = $request->validate([
-            "employment_status" => "sometimes|required|in:aktif,cuti,resign,phk",
-            "position_id" => "sometimes|nullable|integer|exists:positions,id",
-            "department_id" => "sometimes|nullable|integer|exists:departments,id",
-        ]);
-
         try {
+            $validated = $request->validate([
+                "employment_status" => "sometimes|required|in:aktif,cuti,resign,phk",
+                "position_id" => "sometimes|nullable|integer|exists:positions,id",
+                "department_id" => "sometimes|nullable|integer|exists:departments,id",
+            ]);
+
             DB::beginTransaction();
 
             $employee->update($validated);
@@ -57,8 +60,18 @@ class EmployeeManagementController extends Controller
             return ResponseWrapper::make(
                 "Data manajemen karyawan berhasil diperbarui",
                 200,
+                true,
                 ["employee" => $employee],
                 null
+            );
+
+        } catch (ValidationException $e) {
+            return ResponseWrapper::make(
+                "Validasi gagal",
+                422,
+                false,
+                null,
+                $e->errors()
             );
 
         } catch (Throwable $e) {
@@ -73,6 +86,7 @@ class EmployeeManagementController extends Controller
             return ResponseWrapper::make(
                 "Gagal memperbarui data manajemen karyawan",
                 500,
+                false,
                 null,
                 ["error" => "Internal server error"]
             );
