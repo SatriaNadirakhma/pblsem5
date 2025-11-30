@@ -21,7 +21,9 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
 
   Future<Map<String, dynamic>> fetchDashboardData() async {
     final response = await http.get(
-      Uri.parse('https://bae60a8d3034.ngrok-free.app/api/izin-dashboard'),
+      Uri.parse(
+        'https://collene-eternal-luba.ngrok-free.dev/api/izin-dashboard',
+      ),
       headers: {'Accept': 'application/json'},
     );
 
@@ -134,15 +136,20 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
                                 ),
                               );
                             final data = snapshot.data ?? {};
-                            final pending = data['total_pending'] ?? 0;
-                            final total = data['total_employees'] ?? 1;
+                            final employeesWithLetters =
+                                data['total_employees_with_letters'];
+                            final totalEmployees = data['total_employees'];
+                            final lettersApproved =
+                                data['total_letters_approved'];
+                            final totalLetters = data['total_letters'];
+
                             return Row(
                               children: [
                                 Expanded(
                                   child: _buildCleanStatCard(
                                     icon: Icons.person_outline_rounded,
-                                    value: pending.toString(),
-                                    total: total.toString(),
+                                    value: employeesWithLetters.toString(),
+                                    total: totalEmployees.toString(),
                                     label: "Karyawan Ajukan Izin",
                                   ),
                                 ),
@@ -150,9 +157,9 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
                                 Expanded(
                                   child: _buildCleanStatCard(
                                     icon: Icons.pending_actions,
-                                    value: pending.toString(),
-                                    total: total.toString(),
-                                    label: "Menunggu Approval",
+                                    value: lettersApproved.toString(),
+                                    total: totalLetters.toString(),
+                                    label: "Surat Izin yang sudah di terima",
                                   ),
                                 ),
                               ],
@@ -169,21 +176,29 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
 
               SliverToBoxAdapter(
                 child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00A8E8),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const Text(
-                      'SEMUA KARYAWAN',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  child: GestureDetector(
+                    onTap: () async {
+                      final data = await dashboardData;
+                      final allLetters = data['all_letters'] ?? [];
+
+                      context.push('/admin/all-letters', extra: allLetters);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00A8E8),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Text(
+                        'SEMUA KARYAWAN',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
