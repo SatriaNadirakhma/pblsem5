@@ -22,9 +22,11 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
   Future<Map<String, dynamic>> fetchDashboardData() async {
     final response = await http.get(
       Uri.parse(
-        'https://collene-eternal-luba.ngrok-free.dev/api/izin-dashboard',
-      ),
-      headers: {'Accept': 'application/json'},
+        'https://03086f620b3d.ngrok-free.app/api/izin-dashboard',
+      ),headers: {
+      'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+    },
     );
 
     if (response.statusCode == 200) {

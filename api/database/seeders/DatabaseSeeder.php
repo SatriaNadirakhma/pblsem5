@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             HolidaySeeder::class,
             FullEmployeeSeeder::class,
+            LetterFormatsSeeder::class,
+            LetterSeeder::class,
         ]);
     }
 }

@@ -2,13 +2,11 @@
 import 'package:go_router/go_router.dart';
 
 import 'package:client/screens/login_screen.dart';
-import 'package:client/screens/home_screen.dart';
+import 'package:client/screens/Group_1/Admin/home_screen.dart';
 import 'package:client/screens/placeholder_screen.dart';
-import 'package:client/screens/Admin/home_admin.dart';
-import 'package:client/screens/Admin/all_letters_page.dart';
-//import 'package:client/screens/Admin/home_admin_main_screen.dart';
-import 'package:client/screens/Admin/izin_laporan_menu.dart';
-import 'package:client/screens/Admin/admin_izin_manager.dart';
+import 'package:client/screens/Group_1/Admin/all_letters_page.dart';
+import 'package:client/screens/Group_1/Admin/izin_laporan_menu.dart';
+import 'package:client/screens/Group_1/Admin/admin_izin_manager.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/',
@@ -71,18 +69,5 @@ final GoRouter router = GoRouter(
         return AllLettersPage(letters: letters);
       },
     ),
-
-    // // ADMIN SHELL (keeping existing structure)
-    // ShellRoute(
-    //   builder: (context, state, child) => AdminHomeMain(child: child),
-    //   routes: [
-    //     GoRoute(
-    //       path: '/admin-home',
-    //       name: 'admin_home',
-    //       pageBuilder: (context, state) =>
-    //           const NoTransitionPage(child: AdminHomeScreen()),
-    //     ),
-    //   ],
-    // ),
   ],
 );

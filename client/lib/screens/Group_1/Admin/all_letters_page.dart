@@ -11,7 +11,7 @@ class AllLettersPage extends StatelessWidget {
 
   Future<void> exportToExcel() async {
     const url =
-        "https://collene-eternal-luba.ngrok-free.dev/api/export-approved-letters";
+        "https://03086f620b3d.ngrok-free.app/api/export-approved-letters";
 
     try {
       Dio dio = Dio();
