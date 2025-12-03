@@ -8,19 +8,23 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class EmployeeProfileController extends Controller
 {
     /**
-     * Update employee personal information (by employee themselves).
-     * Only updates: first_name, last_name, gender, address
+     * Update employee profile data (by employee themselves).
+     * Only updates: first_name, last_name, gender, address, profile_photo
      */
     public function update(Request $request, string $id)
     {
-        $employee = Employee::find($id);
+        // Remove _method field from request (for method spoofing)
+        $request->request->remove('_method');
         
+        $employee = Employee::find($id);
+
         if (!$employee) {
             return ResponseWrapper::make(
                 "Karyawan tidak ditemukan",
@@ -32,7 +36,7 @@ class EmployeeProfileController extends Controller
         }
 
         // TODO: Add authorization check
-        // if ($request->user()->employee->id !== (int)$id) {
+        // if ($request->user()->id !== $employee->user_id) {
         //     return ResponseWrapper::make(
         //         "Anda tidak memiliki akses untuk mengubah data ini",
         //         403,
@@ -48,14 +52,28 @@ class EmployeeProfileController extends Controller
                 "last_name" => "sometimes|required|string|max:100",
                 "gender" => "sometimes|required|in:L,P",
                 "address" => "sometimes|required|string|max:255",
+                "profile_photo" => "sometimes|image|mimes:jpeg,jpg,png|max:2048", // Max 2MB
             ]);
 
             DB::beginTransaction();
+
+            // Handle profile photo upload
+            if ($request->hasFile('profile_photo')) {
+                // Delete old photo if exists
+                if ($employee->profile_photo) {
+                    Storage::disk('public')->delete($employee->profile_photo);
+                }
+
+                // Store new photo in storage/app/public/profile_photos
+                $path = $request->file('profile_photo')->store('profile_photos', 'public');
+                $validated['profile_photo'] = $path;
+            }
 
             $employee->update($validated);
 
             DB::commit();
 
+            // Load relationships
             $employee->load(['user', 'position', 'department']);
 
             return ResponseWrapper::make(
@@ -67,6 +85,8 @@ class EmployeeProfileController extends Controller
             );
 
         } catch (ValidationException $e) {
+            DB::rollBack();
+            
             return ResponseWrapper::make(
                 "Validasi gagal",
                 422,

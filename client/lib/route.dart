@@ -25,10 +25,10 @@ import 'widgets/navbar_user.dart';
 final storage = FlutterSecureStorage();
 
 final GoRouter router = GoRouter(
-  initialLocation: "/role-selection",
-  // redirect: (context, state) {
-  //   return AuthService.instance.redirectUser(state);
-  // },
+  initialLocation: "/login",
+  redirect: (context, state) {
+    return AuthService.instance.redirectUser(state);
+  },
 
   routes: [
     // ========================================
