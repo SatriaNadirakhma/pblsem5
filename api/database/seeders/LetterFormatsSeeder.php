@@ -12,56 +12,41 @@ class LetterFormatsSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        $data = [
+        $content = <<<EOT
+SURAT IZIN {{NAMA SURAT}}
+
+Perihal: Izin {{NAMA SURAT}}
+Lampiran: -
+
+Kepada Yth. HRD
+Di 
+Tempat.
+
+Dengan hormat,
+
+Saya yang bertanda tangan di bawah ini:
+
+Nama        : {{first_name}} {{last_name}}
+Jabatan     : {{position}}
+Departemen  : {{department_name}}
+
+Bermaksud untuk mengajukan surat permohonan cuti tahunan pada tanggal [dd/mm/yyyy] hingga [dd/mm/yyyy].
+
+Demikian surat izin ini saya ajukan. Atas pengertiannya, saya ucapkan terima kasih.
+
+Hormat saya
+
+
+{{first name}} {{last name}}
+EOT;
+
+        DB::table('letter_formats')->updateOrInsert(
+            ['name' => 'Surat Izin Default'],   // pastikan selalu ada
             [
-                'name' => 'Surat Izin Cuti Tahunan',
-                'content' => '
-                    Kepada Yth,
-                    HR Department
-
-                    Dengan hormat,
-                    Saya mengajukan permohonan izin cuti tahunan sesuai dengan ketentuan perusahaan.
-                    Mohon persetujuannya agar proses cuti dapat dilakukan sesuai jadwal yang telah direncanakan.
-
-                    Hormat saya,
-                    [NAMA KARYAWAN]
-                ',
-                'created_at' => $now,
+                'content' => $content,
                 'updated_at' => $now,
-            ],
-            [
-                'name' => 'Surat Cuti di Luar Tanggungan Perusahaan',
-                'content' => '
-                    Kepada Yth,
-                    HR Department
-
-                    Dengan hormat,
-                    Saya mengajukan permohonan cuti di luar tanggungan perusahaan karena alasan pribadi.
-                    Saya memahami bahwa selama periode ini saya tidak menerima hak dan fasilitas perusahaan.
-
-                    Hormat saya,
-                    [NAMA KARYAWAN]
-                ',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'name' => 'Surat Izin Tugas Perusahaan',
-                'content' => '
-                    Kepada Yth,
-                    Pimpinan Perusahaan
-
-                    Dengan hormat,
-                    Surat ini diterbitkan untuk memberikan tugas kepada karyawan terkait untuk melaksanakan tugas perusahaan sesuai penugasan yang telah ditetapkan.
-
-                    Hormat kami,
-                    [MANAGEMENT]
-                ',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ];
-
-        DB::table('letter_formats')->insert($data);
+                'created_at' => $now
+            ]
+        );
     }
 }

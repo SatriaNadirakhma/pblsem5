@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\API;
+
+use App\Helpers\ResponseWrapper;
 use App\Models\Letter;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -12,81 +14,153 @@ class LetterController extends Controller
 
     public function index(Request $request)
     {
-        $query = Letter::with(['employee', 'format']);
+        try {
+            $query = Letter::with(['employee', 'format']);
 
-        if ($request->status !== null) {
-            $query->where('status', $request->status);
+            if ($request->status !== null) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->employee_id) {
+                $query->where('employee_id', $request->employee_id);
+            }
+
+            $letters = $query->orderBy('id', 'desc')->get();
+
+            return ResponseWrapper::make(
+                "Data surat berhasil dimuat",
+                200,
+                true,
+                $letters,
+                null
+            );
+
+        } catch (\Exception $e) {
+            return ResponseWrapper::make(
+                "Gagal memuat data surat",
+                500,
+                false,
+                null,
+                $e->getMessage()
+            );
         }
-
-        if ($request->employee_id) {
-            $query->where('employee_id', $request->employee_id);
-        }
-
-        return response()->json($query->orderBy('id', 'desc')->get());
     }
 
-    // =========================
-    // SHOW A SINGLE LETTER
-    // =========================
     public function show($id)
     {
-        $letter = Letter::with(['employee', 'format'])->findOrFail($id);
-        return response()->json($letter);
+        try {
+            $letter = Letter::with(['employee', 'format'])->findOrFail($id);
+
+            return ResponseWrapper::make(
+                "Detail surat berhasil dimuat",
+                200,
+                true,
+                $letter,
+                null
+            );
+
+        } catch (\Exception $e) {
+            return ResponseWrapper::make(
+                "Surat tidak ditemukan",
+                404,
+                false,
+                null,
+                $e->getMessage()
+            );
+        }
     }
 
-    // =========================
-    // EMPLOYEE SUBMITS REQUEST
-    // =========================
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'letter_format_id' => 'required|exists:letter_formats,id',
-            'employee_id'      => 'required|exists:employees,id',
-            'title'            => 'required|string|max:255',
-            'effective_start_date' => 'required|date',
-            'effective_end_date'   => 'required|date|after_or_equal:effective_start_date',
-            'notes'            => 'nullable|string',
-        ]);
+        try {
+            $validated = $request->validate([
+                'letter_format_id'       => 'required|exists:letter_formats,id',
+                'employee_id'            => 'required|exists:employees,id',
+                'title'                  => 'required|string|max:255',
+                'effective_start_date'   => 'required|date',
+                'effective_end_date'     => 'required|date|after_or_equal:effective_start_date',
+                'notes'                  => 'nullable|string',
+            ]);
 
-        $validated['status'] = 0; // pending
-        $validated['request_date'] = Carbon::now()->toDateString();
+            $validated['status'] = 0; // pending
+            $validated['request_date'] = Carbon::now()->toDateString();
 
-        $letter = Letter::create($validated);
+            $letter = Letter::create($validated);
 
-        return response()->json($letter, 201);
+            return ResponseWrapper::make(
+                "Pengajuan surat berhasil dibuat",
+                201,
+                true,
+                $letter,
+                null
+            );
+
+        } catch (\Exception $e) {
+            return ResponseWrapper::make(
+                "Gagal membuat pengajuan surat",
+                500,
+                false,
+                null,
+                $e->getMessage()
+            );
+        }
     }
 
-    // =========================
-    // ADMIN UPDATES STATUS
-    // =========================
     public function updateStatus(Request $request, $id)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:0,1,2' // pending / approved / rejected
-        ]);
+        try {
+            $validated = $request->validate([
+                'status' => 'required|in:0,1,2'
+            ]);
 
-        $letter = Letter::findOrFail($id);
+            $letter = Letter::findOrFail($id);
 
-        $letter->status = $validated['status'];
-        $letter->approved_by = $request->approved_by ?? null; // admin user id
-        $letter->approved_at = Carbon::now();
+            $letter->status = $validated['status'];
+            $letter->approved_by = $request->approved_by ?? null;
+            $letter->approved_at = Carbon::now();
+            $letter->save();
 
-        $letter->save();
+            return ResponseWrapper::make(
+                "Status surat berhasil diperbarui",
+                200,
+                true,
+                $letter,
+                null
+            );
 
-        return response()->json([
-            'message' => 'Status updated successfully',
-            'data' => $letter
-        ]);
+        } catch (\Exception $e) {
+            return ResponseWrapper::make(
+                "Gagal memperbarui status surat",
+                500,
+                false,
+                null,
+                $e->getMessage()
+            );
+        }
     }
 
-    // =========================
-    // DELETE LETTER REQUEST
-    // =========================
     public function destroy($id)
     {
-        $letter = Letter::findOrFail($id);
-        $letter->delete();
+        try {
+            $letter = Letter::findOrFail($id);
+            $letter->delete();
 
-        return response()->json(['message' => 'Letter deleted']);
+            return ResponseWrapper::make(
+                "Surat berhasil dihapus",
+                200,
+                true,
+                null,
+                null
+            );
+
+        } catch (\Exception $e) {
+            return ResponseWrapper::make(
+                "Gagal menghapus surat",
+                500,
+                false,
+                null,
+                $e->getMessage()
+            );
+        }
     }
 }

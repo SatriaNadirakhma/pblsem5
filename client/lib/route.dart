@@ -1,6 +1,5 @@
 // lib/router.dart
 import 'package:client/screens/employee_screen.dart';
-import 'package:client/screens/home_screen.dart';
 import 'package:client/screens/login_screen.dart';
 import 'package:client/screens/forgot_password_screen.dart';
 import 'package:client/screens/profile_screen.dart';
@@ -13,23 +12,24 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'screens/admin_screen.dart';
 import 'widgets/navbar_user.dart';
-
-final storage = FlutterSecureStorage();
-
 import 'package:client/screens/login_screen.dart';
-import 'package:client/screens/Group_1/Admin/home_screen.dart';
 import 'package:client/screens/placeholder_screen.dart';
+import 'package:client/screens/Group_1/home_screen.dart';
 import 'package:client/screens/Group_1/Admin/all_letters_page.dart';
+import 'package:client/screens/Group_1/Admin/add_template_screen.dart';
+import 'package:client/screens/Group_1/Admin/list_template_screen.dart';
+import 'package:client/screens/Group_1/Admin/edit_template_screen.dart';
 import 'package:client/screens/Group_1/Admin/izin_laporan_menu.dart';
 import 'package:client/screens/Group_1/Admin/admin_izin_manager.dart';
 
-final GoRouter router = GoRouter(
-  initialLocation: '/',
-  initialLocation: "/login",
-  redirect: (context, state) {
-    return AuthService.instance.redirectUser(state);
-  },
+final storage = FlutterSecureStorage();
 
+final GoRouter router = GoRouter(
+  initialLocation: "/home",
+
+  // redirect: (context, state) {
+  //   return AuthService.instance.redirectUser(state);
+  // },
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => Scaffold(
@@ -100,9 +100,6 @@ final GoRouter router = GoRouter(
 
     GoRoute(path: "/login", builder: (context, state) => const LoginScreen()),
     GoRoute(
-      path: '/login',
-      name: 'login',
-      builder: (context, state) => const LoginScreen(),
       path: "/forgot-password",
       builder: (context, state) => const ForgotPasswordScreen(),
     ),
@@ -163,5 +160,23 @@ final GoRouter router = GoRouter(
         return AllLettersPage(letters: letters);
       },
     ),
+
+    GoRoute(
+      path: '/admin/template/add',
+      builder: (context, state) => const AddTemplateScreen(),
+    ),
+
+    GoRoute(
+      path: '/admin/template/list',
+      builder: (context, state) => const ListTemplateScreen(),
+    ),
+
+    GoRoute(
+  path: "/admin/template/edit",
+  builder: (context, state) {
+    final data = state.extra as Map;
+    return EditTemplateScreen(template: data);
+  },
+),
   ],
 );

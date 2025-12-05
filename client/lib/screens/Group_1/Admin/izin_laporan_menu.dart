@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:client/services/leave_report_service.dart';
+import 'package:client/models/leave_report_model.dart';
+import 'package:client/utils/api_wrapper.dart';
 
 class AdminIzinDashboard extends StatefulWidget {
   const AdminIzinDashboard({super.key});
@@ -11,14 +12,15 @@ class AdminIzinDashboard extends StatefulWidget {
 }
 
 class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
-  late Future<Map<String, dynamic>> dashboardData;
+  late Future<ApiResponse<LeaveReportResponse>> dashboardFuture;
 
   @override
   void initState() {
     super.initState();
-    dashboardData = fetchDashboardData();
+    dashboardFuture = LeaveReportService.instance.getDashboard();
   }
 
+<<<<<<< HEAD
   Future<Map<String, dynamic>> fetchDashboardData() async {
     final response = await http.get(
       Uri.parse(
@@ -35,6 +37,12 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
     } else {
       throw Exception('Failed: ${response.statusCode}');
     }
+=======
+  Future<void> _refresh() async {
+    setState(() {
+      dashboardFuture = LeaveReportService.instance.getDashboard();
+    });
+>>>>>>> origin/MiniGroup-1
   }
 
   String _getMonthName(int month) {
@@ -77,76 +85,74 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async =>
-              setState(() => dashboardData = fetchDashboardData()),
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // HEADER
-              SliverToBoxAdapter(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF00A8E8), Color(0xFF00C4D6)],
-                    ),
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(40),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Laporan Statistik Izin',
-                          style: TextStyle(color: Colors.white70, fontSize: 18),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'HRIS ANALYTICS',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Update ${DateTime.now().day} ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 30),
-                        FutureBuilder<Map<String, dynamic>>(
-                          future: dashboardData,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              );
-                            }
-                            if (snapshot.hasError)
-                              return Center(
-                                child: Text(
-                                  "Error: ${snapshot.error}",
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              );
-                            final data = snapshot.data ?? {};
-                            final employeesWithLetters =
-                                data['total_employees_with_letters'];
-                            final totalEmployees = data['total_employees'];
-                            final lettersApproved =
-                                data['total_letters_approved'];
-                            final totalLetters = data['total_letters'];
+          onRefresh: _refresh,
+          child: FutureBuilder<ApiResponse<LeaveReportResponse>>(
+            future: dashboardFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.blue),
+                );
+              }
 
-                            return Row(
+              if (!snapshot.hasData || snapshot.data!.success == false) {
+                return Center(
+                  child: Text(
+                    snapshot.data?.message ?? "Terjadi kesalahan",
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              final data = snapshot.data!.data!;
+              final totalEmployees = data.totalEmployees;
+              final employeesWithLetters = data.totalEmployeesWithLetters;
+
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  // HEADER (SAMA seperti sebelum)
+                  SliverToBoxAdapter(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF00A8E8), Color(0xFF00C4D6)],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(40),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Laporan Statistik Izin',
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 18),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'HRIS ANALYTICS',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Update ${DateTime.now().day} ${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+
+                            // STAT CARDS (SAMA seperti sebelum)
+                            Row(
                               children: [
                                 Expanded(
                                   child: _buildCleanStatCard(
@@ -160,103 +166,94 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
                                 Expanded(
                                   child: _buildCleanStatCard(
                                     icon: Icons.pending_actions,
-                                    value: lettersApproved.toString(),
-                                    total: totalLetters.toString(),
-                                    label: "Surat Izin yang sudah di terima",
+                                    value: data.totalLettersApproved.toString(),
+                                    total: data.totalLetters.toString(),
+                                    label: "Surat Izin yang sudah diterima",
                                   ),
                                 ),
                               ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 40)),
-
-              SliverToBoxAdapter(
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () async {
-                      final data = await dashboardData;
-                      final allLetters = data['all_letters'] ?? [];
-
-                      context.push('/admin/all-letters', extra: allLetters);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00A8E8),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Text(
-                        'SEMUA KARYAWAN',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 40)),
 
-              // MAGIC FIX: Dynamic childAspectRatio + safe bottom space
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  bottom:
-                      MediaQuery.of(context).padding.bottom +
-                      100, // FAB safe zone
-                ),
-                sliver: FutureBuilder<Map<String, dynamic>>(
-                  future: dashboardData,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const SliverToBoxAdapter(
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    final departments =
-                        (snapshot.data?['departments'] as List?) ?? [];
+                  // BUTTON SEMUA KARYAWAN (SAMA)
+                  SliverToBoxAdapter(
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          context.push(
+                            "/admin/all-letters",
+                            extra: data.allLetters,
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 32, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00A8E8),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const Text(
+                            'SEMUA KARYAWAN',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
-                    return SliverGrid(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+                  // GRID DEPARTEMEN (SAMA)
+                  SliverPadding(
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      bottom: MediaQuery.of(context).padding.bottom + 100,
+                    ),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        // FIXED: Lower aspect ratio for mobile to make cards taller
                         childAspectRatio: screenWidth < 380
                             ? 0.85
                             : (screenWidth < 420 ? 0.95 : 1.1),
                       ),
                       delegate: SliverChildBuilderDelegate(
-                        (context, index) => _buildDepartmentCard(
-                          departments[index]['name'] ?? 'Dept',
-                          departments[index]['count'] ?? '0 / 0',
-                        ),
-                        childCount: departments.length,
+                        (context, index) {
+                          final dept = data.departments[index];
+                          return _buildDepartmentCard(
+                            dept["name"],
+                            dept["count"],
+                          );
+                        },
+                        childCount: data.departments.length,
                       ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  // =============================
+  //      UI COMPONENTS (SAMA)
+  // =============================
 
   Widget _buildCleanStatCard({
     required IconData icon,
@@ -280,11 +277,8 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: screenWidth < 380 ? 28 : 36,
-                color: Colors.white,
-              ),
+              Icon(icon,
+                  size: screenWidth < 380 ? 28 : 36, color: Colors.white),
               SizedBox(width: screenWidth < 380 ? 8 : 12),
               Text(
                 value,
@@ -297,7 +291,7 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
             ],
           ),
           Text(
-            '/ $total',
+            "/ $total",
             style: TextStyle(
               color: Colors.white70,
               fontSize: screenWidth < 380 ? 14 : 18,
@@ -337,7 +331,8 @@ class _AdminIzinDashboardState extends State<AdminIzinDashboard> {
           CircleAvatar(
             radius: 28,
             backgroundColor: Colors.white,
-            child: Icon(Icons.person, size: 32, color: const Color(0xFF00A8E8)),
+            child: Icon(Icons.person,
+                size: 32, color: const Color(0xFF00A8E8)),
           ),
           const SizedBox(height: 12),
           Text(

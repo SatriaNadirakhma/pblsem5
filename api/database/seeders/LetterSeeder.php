@@ -34,7 +34,7 @@ class LetterSeeder extends Seeder
                 : null;
 
             $data[] = [
-                'letter_format_id'      => rand(1, 3),
+                'letter_format_id'      => 1,
                 'employee_id'           => $employeeId,
                 'title'                 => 'Permohonan Surat ' . ($i + 1),
                 'status'                => $status,
