@@ -39,28 +39,31 @@ class User extends Authenticatable
 {
     use HasApiTokens, Notifiable;
 
-    protected $fillable = [
-        'email',
-        'password',
-        'is_admin',
-    ];
+    protected $fillable = ["email", "password", "is_admin"];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ["password", "remember_token"];
 
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_admin' => 'boolean',
+            "email_verified_at" => "datetime",
+            "password" => "hashed",
+            "is_admin" => "boolean",
         ];
     }
 
     public function employee()
     {
-        return $this->hasOne(Employee::class, 'user_id');
+        return $this->hasOne(Employee::class, "user_id");
+    }
+
+    public function departement()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function position()
+    {
+        return $this->belongsTo(Position::class);
     }
 }

@@ -1,20 +1,54 @@
+import 'package:client/models/employee_model.dart';
+import 'package:client/models/user_model.dart';
+import 'package:client/services/auth_service.dart';
+import 'package:client/services/user_service.dart';
+import 'package:client/widgets/custom_appbar.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final int? userId;
 
+  const ProfileScreen({super.key, this.userId});
+
+  //Dummy Untuk Test UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
+      appBar: CustomAppbar(title: ""),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
+        child: FutureBuilder(
+          future: UserService.instance.getUser(userId),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return profileSection(context, snapshot.data?.data);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+String parseGender(String gender) {
+  if (gender == "P") {
+    return "Perempuan";
+  }
+  if (gender == "L") {
+    return "Laki-Laki";
+  }
+  return "";
+}
+
+Widget profileSection(BuildContext context, UserModel<EmployeeModel>? user) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        decoration: const BoxDecoration(color: Color(0xFF22A9D6)),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
@@ -31,6 +65,7 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
+            // Form fields
             const _ProfileField(title: "Nama Awal", value: "John"),
             const _ProfileField(title: "Nama Akhir", value: "Doe"),
             const _ProfileField(title: "Email", value: "JohnDoe@gmail.com"),
@@ -45,16 +80,14 @@ class ProfileScreen extends StatelessWidget {
               value: "Teknologi Informasi",
             ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // Tombol Informasi Gaji → ke Payroll
+            // Tombol Informasi Gaji
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () {
-                  context.push("/payroll"); // navigasi ke PayrollScreen
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(
@@ -93,16 +126,17 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ],
+  );
 }
 
-/// Widget custom untuk field profile
+// Widget Custom untuk Field
 class _ProfileField extends StatelessWidget {
   final String title;
   final String value;
+  final Color? color;
 
-  const _ProfileField({super.key, required this.title, required this.value});
+  const _ProfileField({required this.title, required this.value, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -112,24 +146,36 @@ class _ProfileField extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
-        TextField(
-          readOnly: true,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xffe8e8e8),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+
+        Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12.withOpacity(0.1),
+                blurRadius: 3,
+                offset: const Offset(1, 2),
+              ),
+            ],
+          ),
+          child: TextField(
+            readOnly: true,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: color ?? const Color(0xfff1f1f1),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              hintText: value,
+              hintStyle: const TextStyle(color: Colors.black87, fontSize: 15),
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            hintText: value,
-            hintStyle: const TextStyle(color: Colors.black87),
           ),
         ),
       ],
