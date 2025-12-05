@@ -1,24 +1,17 @@
 import 'package:client/screens/employee_screen.dart';
 import 'package:client/screens/home_screen.dart';
 import 'package:client/screens/login_screen.dart';
+import 'package:client/screens/payroll_screen.dart';
 import 'package:client/screens/forgot_password_screen.dart';
 import 'package:client/screens/profile_screen.dart';
 import 'package:client/screens/change_password_screen.dart';
+import 'package:client/screens/register_screen.dart';
 import 'package:client/services/auth_service.dart';
 import 'package:client/widgets/navbar_admin.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:flutter/material.dart';
 import 'screens/admin_screen.dart';
-import 'screens/employee_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/forgot_password_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/change_password_screen.dart';
-import 'screens/payroll_screen.dart';
-import 'screens/payroll_detail_screen.dart';  
-
-import 'widgets/navbar_admin.dart';
 import 'widgets/navbar_user.dart';
 
 final storage = FlutterSecureStorage();
@@ -26,17 +19,13 @@ final storage = FlutterSecureStorage();
 final GoRouter router = GoRouter(
   initialLocation: "/login",
   redirect: (context, state) {
-    // return AuthService.instance.redirectUser(state);
+    return AuthService.instance.redirectUser(state);
   },
-
   routes: [
-    // ==============================
-    // ADMIN NAVIGATION
-    // ==============================
     StatefulShellRoute.indexedStack(
-      builder: (context, state, shell) => Scaffold(
-        body: shell,
-        bottomNavigationBar: NavbarAdmin(navigationShell: shell),
+      builder: (context, state, navigationShell) => Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: NavbarAdmin(navigationShell: navigationShell),
       ),
       branches: [
         StatefulShellBranch(
@@ -76,13 +65,10 @@ final GoRouter router = GoRouter(
       ],
     ),
 
-    // ==============================
-    // USER NAVIGATION
-    // ==============================
     StatefulShellRoute.indexedStack(
-      builder: (context, state, shell) => Scaffold(
-        body: shell,
-        bottomNavigationBar: NavbarUser(navigationShell: shell),
+      builder: (context, state, navigationShell) => Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: NavbarUser(navigationShell: navigationShell),
       ),
       branches: [
         StatefulShellBranch(
@@ -101,12 +87,17 @@ final GoRouter router = GoRouter(
             ),
           ],
         ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: "/payroll",
+              builder: (context, state) => const PayrollScreen(),
+            ),
+          ],
+        ),
       ],
     ),
 
-    // ==============================
-    // AUTH ROUTES
-    // ==============================
     GoRoute(
       path: "/login",
       builder: (context, state) => const LoginScreen(),
@@ -118,18 +109,6 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: "/change-password",
       builder: (context, state) => const ChangePasswordScreen(),
-    ),
-
-    // ==============================
-    // PAYROLL ROUTES
-    // ==============================
-    GoRoute(
-      path: "/payroll",
-      builder: (context, state) => const PayrollScreen(),
-    ),
-    GoRoute(
-      path: "/payroll/detail",
-      builder: (context, state) => const PayrollDetailScreen(), 
     ),
   ],
 );
