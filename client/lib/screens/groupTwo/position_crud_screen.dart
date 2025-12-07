@@ -26,7 +26,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
 
   Future<void> _loadPositions() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -57,11 +57,13 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
   Future<void> _showForm([PositionModel? pos]) async {
     final isEdit = pos != null;
     final nameCtrl = TextEditingController(text: isEdit ? pos.name : '');
+
+    // ✅ FIX: Handle nullable double in form
     final rateRegulerCtrl = TextEditingController(
-      text: isEdit ? pos.rateReguler.toStringAsFixed(0) : '',
+      text: isEdit ? (pos.rateReguler ?? 0).toStringAsFixed(0) : '',
     );
     final rateOvertimeCtrl = TextEditingController(
-      text: isEdit ? pos.rateOvertime.toStringAsFixed(0) : '',
+      text: isEdit ? (pos.rateOvertime ?? 0).toStringAsFixed(0) : '',
     );
 
     final result = await showDialog<bool>(
@@ -70,11 +72,13 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
       builder: (_) => StatefulBuilder(
         builder: (dialogContext, setDialogState) {
           bool isSaving = false;
-          
+
           return WillPopScope(
             onWillPop: () async => !isSaving,
             child: Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               backgroundColor: const Color(0xFFF6F6F6),
               child: SingleChildScrollView(
                 child: Container(
@@ -150,7 +154,8 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                                 Expanded(
                                   child: CustomButton(
                                     backgroundColor: Colors.grey[300],
-                                    onPressed: () => Navigator.pop(dialogContext, false),
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext, false),
                                     child: const Text(
                                       'Batal',
                                       style: TextStyle(
@@ -168,12 +173,16 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                                     onPressed: () async {
                                       // Validasi input
                                       if (nameCtrl.text.trim().isEmpty) {
-                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          dialogContext,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             backgroundColor: Colors.red,
                                             content: Text(
                                               'Nama posisi harus diisi',
-                                              style: TextStyle(color: Colors.white),
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         );
@@ -181,13 +190,20 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                                       }
 
                                       if (rateRegulerCtrl.text.isEmpty ||
-                                          double.tryParse(rateRegulerCtrl.text) == null) {
-                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                          double.tryParse(
+                                                rateRegulerCtrl.text,
+                                              ) ==
+                                              null) {
+                                        ScaffoldMessenger.of(
+                                          dialogContext,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             backgroundColor: Colors.red,
                                             content: Text(
                                               'Rate regular harus angka',
-                                              style: TextStyle(color: Colors.white),
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         );
@@ -195,13 +211,20 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                                       }
 
                                       if (rateOvertimeCtrl.text.isEmpty ||
-                                          double.tryParse(rateOvertimeCtrl.text) == null) {
-                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                          double.tryParse(
+                                                rateOvertimeCtrl.text,
+                                              ) ==
+                                              null) {
+                                        ScaffoldMessenger.of(
+                                          dialogContext,
+                                        ).showSnackBar(
                                           const SnackBar(
                                             backgroundColor: Colors.red,
                                             content: Text(
                                               'Rate overtime harus angka',
-                                              style: TextStyle(color: Colors.white),
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         );
@@ -216,20 +239,23 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                                         final data = {
                                           'name': nameCtrl.text.trim(),
                                           'rate_reguler':
-                                              double.tryParse(rateRegulerCtrl.text) ?? 0.0,
+                                              double.tryParse(
+                                                rateRegulerCtrl.text,
+                                              ) ??
+                                              0.0,
                                           'rate_overtime':
-                                              double.tryParse(rateOvertimeCtrl.text) ?? 0.0,
+                                              double.tryParse(
+                                                rateOvertimeCtrl.text,
+                                              ) ??
+                                              0.0,
                                         };
 
                                         if (isEdit) {
-                                          await PositionService.instance.updatePosition(
-                                            pos!.id,
-                                            data,
-                                          );
+                                          await PositionService.instance
+                                              .updatePosition(pos!.id, data);
                                         } else {
-                                          await PositionService.instance.createPosition(
-                                            data,
-                                          );
+                                          await PositionService.instance
+                                              .createPosition(data);
                                         }
 
                                         // Berhasil, kembalikan true
@@ -239,13 +265,17 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                                         setDialogState(() {
                                           isSaving = false;
                                         });
-                                        
-                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+
+                                        ScaffoldMessenger.of(
+                                          dialogContext,
+                                        ).showSnackBar(
                                           SnackBar(
                                             backgroundColor: Colors.red,
                                             content: Text(
                                               'Gagal menyimpan: $e',
-                                              style: const TextStyle(color: Colors.white),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         );
@@ -283,7 +313,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
       try {
         // Load ulang data dari server
         await _loadPositions();
-        
+
         setState(() {
           _isProcessing = false;
         });
@@ -293,7 +323,9 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
           SnackBar(
             backgroundColor: const Color(0xFF1B7FA8),
             content: Text(
-              isEdit ? 'Posisi berhasil diperbarui' : 'Posisi berhasil ditambahkan',
+              isEdit
+                  ? 'Posisi berhasil diperbarui'
+                  : 'Posisi berhasil ditambahkan',
               style: const TextStyle(color: Colors.white),
             ),
           ),
@@ -302,7 +334,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
         setState(() {
           _isProcessing = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.red,
@@ -319,7 +351,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
   Future<void> _deletePosition(int id) async {
     // Dapatkan posisi yang akan dihapus untuk ditampilkan di konfirmasi
     final positionToDelete = _positions.firstWhere((pos) => pos.id == id);
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => Dialog(
@@ -397,7 +429,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
 
       try {
         await PositionService.instance.deletePosition(id);
-        
+
         // Hapus dari local state
         setState(() {
           _positions.removeWhere((pos) => pos.id == id);
@@ -417,7 +449,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
         setState(() {
           _isProcessing = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.red,
@@ -469,9 +501,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                   IconButton(
                     icon: const Icon(Icons.edit, size: 20),
                     color: const Color(0xFF1B7FA8),
-                    onPressed: _isProcessing
-                        ? null
-                        : () => _showForm(position),
+                    onPressed: _isProcessing ? null : () => _showForm(position),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete, size: 20),
@@ -496,8 +526,9 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 4),
+                    // ✅ FIX: Handle nullable double
                     Text(
-                      'Rp ${position.rateReguler.toStringAsFixed(0)}',
+                      'Rp ${(position.rateReguler ?? 0).toStringAsFixed(0)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -517,8 +548,9 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 4),
+                    // ✅ FIX: Handle nullable double
                     Text(
-                      'Rp ${position.rateOvertime.toStringAsFixed(0)}',
+                      'Rp ${(position.rateOvertime ?? 0).toStringAsFixed(0)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -551,10 +583,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
             const SizedBox(height: 16),
             const Text(
               'Terjadi kesalahan',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.black87,
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.black87),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -562,10 +591,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
               child: Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ),
             const SizedBox(height: 24),
@@ -591,11 +617,7 @@ class _PositionCrudScreenState extends State<PositionCrudScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.list_alt,
-              size: 80,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.list_alt, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 24),
             const Text(
               'Belum ada posisi',

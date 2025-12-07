@@ -547,7 +547,7 @@ class _DepartmentCrudScreenState extends State<DepartmentCrudScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          department.latitude.toStringAsFixed(6),
+                          department.latitude?.toStringAsFixed(6) ?? 'N/A',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -568,7 +568,7 @@ class _DepartmentCrudScreenState extends State<DepartmentCrudScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          department.longitude.toStringAsFixed(6),
+                          department.longitude?.toStringAsFixed(6) ?? 'N/A',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
