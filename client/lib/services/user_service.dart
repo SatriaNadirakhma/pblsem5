@@ -78,4 +78,41 @@ class UserService extends BaseService<UserModel> {
       );
     }
   }
+
+  /// Update user data (untuk edit email, dll)
+  Future<ApiResponse<UserModel<EmployeeModel>>> updateUser(
+    int userId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      log("=== UPDATE USER ===");
+      log("User ID: $userId");
+      log("Data: $data");
+
+      final response = await dio.patch("/user/$userId", data: data);
+
+      log("Response status: ${response.statusCode}");
+      log("Response data: ${response.data}");
+
+      return ApiResponse.fromJson(response.data, (json) {
+        final userData = json as Map<String, dynamic>;
+
+        // ✅ HANDLE NESTED DATA
+        final actualData = userData['data'] ?? userData;
+
+        return UserModel.fromJson(actualData, (employee) {
+          return EmployeeModel.fromJson(employee as Map<String, dynamic>);
+        });
+      });
+    } catch (e, s) {
+      log("❌ Error: Update User Failed", error: e, stackTrace: s);
+
+      return ApiResponse<UserModel<EmployeeModel>>(
+        message: 'Gagal memperbarui data: ${e.toString()}',
+        success: false,
+        data: null,
+        error: e,
+      );
+    }
+  }
 }
