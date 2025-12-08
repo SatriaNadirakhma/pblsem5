@@ -1,3 +1,3 @@
 class Constant {
-  static String apiUrl = "https://lila-semipalmate-austin.ngrok-free.dev/api";
+  static String apiUrl = "https://spraylike-practicedly-abigail.ngrok-free.dev/api";
 }

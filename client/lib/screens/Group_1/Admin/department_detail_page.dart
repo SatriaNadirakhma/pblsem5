@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+
+late int totalEmployees;
+late int employeesWithLeave;
 
 class Employee {
   final String name;
@@ -34,30 +40,36 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
   void initState() {
     super.initState();
 
-    // --- SAMPLE DATA sementara (nanti bisa diganti data API) ---
+    // =========== DUMMY DATA TESTING =============
     employees = [
       Employee(
-        name: "Aditya Yuhanda",
-        totalCuti: 2,
-        jenisCuti: [
-          "Surat Izin Cuti Tahunan",
-          "Surat Izin Tugas Perusahaan",
-        ],
+        name: "Aulia Rahma",
+        totalCuti: 3,
+        jenisCuti: ["Cuti Tahunan", "Cuti Sakit"],
       ),
       Employee(
-        name: "Larasati Putri",
+        name: "Rizky Firmansyah",
         totalCuti: 1,
-        jenisCuti: [
-          "Surat Izin Tugas Perusahaan",
-        ],
+        jenisCuti: ["Cuti Sakit"],
+      ),
+      Employee(
+        name: "Siti Nurlaila",
+        totalCuti: 2,
+        jenisCuti: ["Izin Mendesak", "Cuti Tahunan"],
       ),
     ];
 
-    filteredEmployees = List.from(employees);
+    // ============================================
 
+    totalEmployees = employees.length;
+    employeesWithLeave = employees.where((e) => e.totalCuti > 0).length;
+
+    filteredEmployees = List.from(employees);
     searchController.addListener(_runFilter);
   }
 
+
+  // ===================== FILTER ======================
   void _runFilter() {
     String keyword = searchController.text.toLowerCase();
 
@@ -68,6 +80,38 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
     });
   }
 
+  // ===================== EXPORT EXCEL ======================
+  Future<void> exportToExcel() async {
+    String csv = "No,Nama,Total Cuti Disetujui,Jenis Cuti\n";
+
+    for (int i = 0; i < filteredEmployees.length; i++) {
+      final e = filteredEmployees[i];
+
+      csv += "${i + 1},"
+          "${e.name},"
+          "${e.totalCuti},"
+          "\"${e.jenisCuti.join(", ")}\"\n";
+    }
+
+    Directory? directory;
+
+    if (Platform.isAndroid) {
+      directory = Directory("/storage/emulated/0/Download");
+    } else {
+      directory = await getApplicationDocumentsDirectory();
+    }
+
+    String filePath =
+        "${directory.path}/Laporan_${widget.departmentData['name']}.csv";
+
+    final file = File(filePath);
+    await file.writeAsString(csv);
+
+    await OpenFilex.open(filePath);
+  }
+
+
+  // =======================================================
   @override
   Widget build(BuildContext context) {
     final dept = widget.departmentData;
@@ -85,12 +129,9 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // HEADER
               _buildHeader(dept),
-
               const SizedBox(height: 20),
 
-              // LIST OTOMATIS DARI filteredEmployees
               ...filteredEmployees.asMap().entries.map((entry) {
                 final index = entry.key + 1;
                 final e = entry.value;
@@ -111,8 +152,7 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
     );
   }
 
-  // =============================== UI COMPONENTS ===============================
-
+  // ============================ HEADER ================================
   Widget _buildHeader(Map<String, dynamic> dept) {
     return Container(
       width: double.infinity,
@@ -145,7 +185,6 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
           ),
           const SizedBox(height: 25),
 
-          // Box jumlah karyawan + search field
           Row(
             children: [
               _buildEmployeeCountBox(dept),
@@ -180,7 +219,7 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
           const Icon(Icons.person, size: 32),
           const SizedBox(width: 8),
           Text(
-            "${dept['count']} ",
+            "$employeesWithLeave / $totalEmployees",
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -226,8 +265,8 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
 
   Widget _buildExportButton() {
     return GestureDetector(
-      onTap: () {
-        // TODO: Export Excel
+      onTap: () async {
+        await exportToExcel();
       },
       child: Container(
         width: double.infinity,
@@ -255,6 +294,7 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
     );
   }
 
+  // =========================== CARD ===============================
   Widget _buildEmployeeCard({
     required int index,
     required String name,
@@ -286,9 +326,9 @@ class _DepartmentDetailPageState extends State<DepartmentDetailPage> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            "Departemen: IT Development",
-            style: TextStyle(fontSize: 15),
+          Text(
+            "Departemen: ${widget.departmentData['name']}",
+            style: const TextStyle(fontSize: 15),
           ),
           const SizedBox(height: 6),
 
