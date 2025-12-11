@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import 'package:client/utils/constant.dart';
 import 'package:go_router/go_router.dart';
+import 'package:client/models/list_template_model.dart';
+import 'package:client/services/list_template_service.dart';
 
 class ListTemplateScreen extends StatefulWidget {
   const ListTemplateScreen({super.key});
@@ -11,7 +11,9 @@ class ListTemplateScreen extends StatefulWidget {
 }
 
 class _ListTemplateScreenState extends State<ListTemplateScreen> {
-  List<dynamic> templates = [];
+  final TemplateService _templateService = TemplateService();
+  
+  List<TemplateModel> templates = [];
   bool loading = true;
 
   @override
@@ -20,39 +22,111 @@ class _ListTemplateScreenState extends State<ListTemplateScreen> {
     loadTemplates();
   }
 
+  // ========================================
+  // LOAD TEMPLATES
+  // ========================================
   Future<void> loadTemplates() async {
-    try {
-      Dio dio = Dio();
-      final res = await dio.get("${Constant.apiUrl}/templates");
+    setState(() => loading = true);
 
+    try {
+      final data = await _templateService.getAllTemplates();
+      
       setState(() {
-        templates = res.data["data"];
+        templates = data;
         loading = false;
       });
     } catch (e) {
-      debugPrint("ERROR LOAD TEMPLATE: $e");
+      debugPrint("❌ ERROR LOAD TEMPLATE: $e");
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal memuat template'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      
       setState(() => loading = false);
     }
   }
 
-  Future<void> deleteTemplate(int id) async {
+  // ========================================
+  // DELETE TEMPLATE
+  // ========================================
+  Future<void> deleteTemplate(TemplateModel template) async {
+    // Cek jika template adalah default
+    if (template.name == "Surat Izin Default") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Template default tidak bisa dihapus'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Confirm deletion
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text('Yakin ingin menghapus template "${template.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
-      Dio dio = Dio();
-      final res = await dio.delete("${Constant.apiUrl}/templates/$id");
+      final success = await _templateService.deleteTemplate(template.id);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res.data["message"])),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success 
+                  ? 'Template berhasil dihapus' 
+                  : 'Gagal menghapus template',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
 
-      loadTemplates();
+        if (success) {
+          loadTemplates(); // Reload list
+        }
+      }
     } catch (e) {
-      debugPrint("ERROR DELETE TEMPLATE: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal menghapus template")),
-      );
+      debugPrint("❌ ERROR DELETE TEMPLATE: $e");
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menghapus template'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
+  // ========================================
+  // BUILD UI
+  // ========================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,78 +134,156 @@ class _ListTemplateScreenState extends State<ListTemplateScreen> {
         title: const Text("List Template"),
         backgroundColor: const Color(0xFF00A8E8),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              await context.push('/admin/template/add');
+              loadTemplates(); // Reload after add
+            },
+            tooltip: 'Tambah Template',
+          ),
+        ],
       ),
 
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : templates.isEmpty
-              ? const Center(child: Text("Belum ada template"))
-              : ListView.builder(
-                  itemCount: templates.length,
-                  itemBuilder: (context, index) {
-                    final item = templates[index];
-                    final bool isDefault = item["name"] == "Surat Izin Default";
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 8,
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
                       ),
-                      child: ListTile(
-                        title: Text(
-                          item["name"],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada template',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: loadTemplates,
+                  child: ListView.builder(
+                    itemCount: templates.length,
+                    padding: const EdgeInsets.all(16),
+                    itemBuilder: (context, index) {
+                      final template = templates[index];
+                      final isDefault = template.name == "Surat Izin Default";
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 2,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          
+                          // ========================================
+                          // TITLE & SUBTITLE
+                          // ========================================
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  template.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              if (isDefault)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[100],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'DEFAULT',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              template.content.length > 80
+                                  ? '${template.content.substring(0, 80)}...'
+                                  : template.content,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+
+                          // ========================================
+                          // ACTION BUTTONS
+                          // ========================================
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // EDIT BUTTON
+                              IconButton(
+                                icon: Icon(
+                                  Icons.edit,
+                                  color: isDefault 
+                                      ? Colors.grey 
+                                      : Colors.blue,
+                                ),
+                                onPressed: isDefault
+                                    ? null
+                                    : () async {
+                                        await context.push(
+                                          "/admin/template/edit",
+                                          extra: template.toJson(),
+                                        );
+                                        loadTemplates(); // Reload after edit
+                                      },
+                                tooltip: isDefault
+                                    ? 'Template default tidak bisa diedit'
+                                    : 'Edit template',
+                              ),
+
+                              // DELETE BUTTON
+                              IconButton(
+                                icon: Icon(
+                                  Icons.delete,
+                                  color: isDefault 
+                                      ? Colors.grey 
+                                      : Colors.red,
+                                ),
+                                onPressed: isDefault
+                                    ? null
+                                    : () => deleteTemplate(template),
+                                tooltip: isDefault
+                                    ? 'Template default tidak bisa dihapus'
+                                    : 'Hapus template',
+                              ),
+                            ],
                           ),
                         ),
-                        subtitle: Text(
-                          (item["content"] ?? "")
-                              .toString()
-                              .replaceAll("\n", " ")
-                              .substring(
-                                0,
-                                item["content"]
-                                    .toString()
-                                    .length
-                                    .clamp(0, 80),
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        // ====== ACTION BUTTONS ======
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // --- EDIT BUTTON (disabled untuk default) ---
-                            IconButton(
-                              icon: Icon(
-                                Icons.edit,
-                                color: isDefault ? Colors.grey : Colors.blue,
-                              ),
-                              onPressed: isDefault
-                                  ? null
-                                  : () => context.push(
-                                        "/admin/template/edit",
-                                        extra: item,
-                                      ),
-                            ),
-
-                            // --- DELETE BUTTON (disabled untuk default) ---
-                            IconButton(
-                              icon: Icon(
-                                Icons.delete,
-                                color: isDefault ? Colors.grey : Colors.red,
-                              ),
-                              onPressed: isDefault
-                                  ? null
-                                  : () => deleteTemplate(item["id"]),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
     );
   }

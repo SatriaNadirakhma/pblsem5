@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:client/utils/constant.dart';
+import 'package:client/services/all_letters_service.dart';
 
 class AllLettersPage extends StatefulWidget {
   final List<dynamic> letters;
@@ -15,111 +11,22 @@ class AllLettersPage extends StatefulWidget {
 }
 
 class _AllLettersPageState extends State<AllLettersPage> {
+  final AllLettersService _service = AllLettersService();
   int? selectedMonth;
-
-  final List<String> monthNames = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-  ];
-
-  Future<void> exportToExcel() async {
-    String baseUrl = "${Constant.apiUrl}/export-approved-letters";
-
-    String url = selectedMonth != null
-        ? "$baseUrl?month=$selectedMonth"
-        : baseUrl;
-
-    try {
-      Dio dio = Dio();
-
-      Directory dir = await getApplicationDocumentsDirectory();
-      String filePath = "${dir.path}/laporan_cuti_disetujui.xlsx";
-
-      await dio.download(
-        url,
-        filePath,
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      await OpenFilex.open(filePath);
-    } catch (e) {
-      debugPrint("ERROR EXPORT: $e");
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    List<dynamic> filteredList = selectedMonth == null
-        ? widget.letters
-        : widget.letters.where((item) {
-            List<String> dates = item['cuti_dates']
-                .toString()
-                .split(',')
-                .map((e) => e.trim())
-                .toList();
+    // Filter menggunakan service
+    List<dynamic> filteredList = _service.filterRawDataByMonth(
+      widget.letters,
+      selectedMonth,
+    );
 
-            bool match = false;
-
-            for (var d in dates) {
-              final parsed = parseDate(d);
-              if (parsed != null && parsed.month == selectedMonth) {
-                match = true;
-                break;
-              }
-            }
-
-            return match;
-          }).toList();
-
-    // ============================
-    // EXPAND MENJADI 1 CARD = 1 CUTI
-    // ============================
-    List<Map<String, dynamic>> expandedList = [];
-
-    for (var item in filteredList) {
-      final cutiList = (item['cuti_list'] ?? '')
-          .toString()
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-
-      final cutiDates = (item['cuti_dates'] ?? '')
-          .toString()
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-
-      for (int i = 0; i < cutiList.length; i++) {
-        final dateStr = i < cutiDates.length ? cutiDates[i] : null;
-        final parsed = parseDate(dateStr);
-
-        // Jika filter bulan aktif → hanya tampilkan cuti yang cocok
-        if (selectedMonth != null) {
-          if (parsed == null || parsed.month != selectedMonth) {
-            continue; // skip cuti bulan lain
-          }
-        }
-
-        expandedList.add({
-          'employee_name': item['employee_name'],
-          'department_name': item['department_name'],
-          'cuti_type': cutiList[i],
-          'cuti_date': dateStr ?? '-',
-        });
-      }
-    }
+    // Expand menggunakan service
+    List<Map<String, dynamic>> expandedList = _service.expandLetters(
+      filteredList,
+      selectedMonth,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -142,7 +49,17 @@ class _AllLettersPageState extends State<AllLettersPage> {
                 Expanded(
                   flex: 1,
                   child: ElevatedButton.icon(
-                    onPressed: exportToExcel,
+                    onPressed: () async {
+                      // ✅ UPDATED: Call new export method
+                      final filePath = await _service.exportToExcel(
+                        expandedList,
+                        selectedMonth,
+                      );
+                      
+                      if (filePath != null) {
+                        await _service.openFile(filePath);
+                      }
+                    },
                     icon: const Icon(Icons.download, size: 20),
                     label: const Text(
                       "Export",
@@ -184,9 +101,7 @@ class _AllLettersPageState extends State<AllLettersPage> {
                           const Icon(Icons.filter_list),
                           const SizedBox(width: 6),
                           Text(
-                            selectedMonth == null
-                                ? "Semua Bulan"
-                                : monthNames[selectedMonth! - 1],
+                            _service.getMonthName(selectedMonth),
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -308,7 +223,10 @@ class _AllLettersPageState extends State<AllLettersPage> {
                     children: [
                       monthFilterOption(null, "Semua Bulan"),
                       ...List.generate(12, (i) {
-                        return monthFilterOption(i + 1, monthNames[i]);
+                        return monthFilterOption(
+                          i + 1,
+                          AllLettersService.monthNames[i],
+                        );
                       }),
                     ],
                   ),
@@ -319,43 +237,6 @@ class _AllLettersPageState extends State<AllLettersPage> {
         );
       },
     );
-  }
-
-  DateTime? parseDate(dynamic value) {
-    if (value == null) return null;
-    if (value is DateTime) return value;
-    if (value is int) {
-      try {
-        return DateTime.fromMillisecondsSinceEpoch(value);
-      } catch (_) {
-        return null;
-      }
-    }
-    if (value is String) {
-      try {
-        return DateTime.parse(value);
-      } catch (_) {
-        try {
-          final sep = value.contains('-')
-              ? '-'
-              : value.contains('/')
-              ? '/'
-              : null;
-          if (sep != null) {
-            final parts = value.split(sep);
-            if (parts.length >= 3) {
-              final day = int.parse(parts[0]);
-              final month = int.parse(parts[1]);
-              final year = int.parse(parts[2]);
-              return DateTime(year, month, day);
-            }
-          }
-        } catch (_) {
-          return null;
-        }
-      }
-    }
-    return null;
   }
 
   Widget monthFilterOption(int? monthValue, String label) {

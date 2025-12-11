@@ -29,12 +29,20 @@ Route::post("/login", [AuthController::class, "login"]);
 Route::post("/send-token", [PasswordChangeController::class, "send_token"]);
 Route::post("/check-token", [PasswordChangeController::class, "check_token"]);
 Route::post("/change-password", [PasswordChangeController::class, "change_password"]);
-
+// ========== LETTER (SURAT IZIN) ROUTES ==========
+Route::prefix('letters')->group(function () {
+    Route::get('/', [LetterController::class, 'index']);
+    Route::get('/{id}', [LetterController::class, 'show']);
+    Route::post('/', [LetterController::class, 'store']);
+    Route::put('/{id}/status', [LetterController::class, 'updateStatus']);
+    Route::delete('/{id}', [LetterController::class, 'destroy']);
+});
+Route::get('/letter-formats', [LetterController::class, 'getAllFormats']);
 // ========================================
 // PROTECTED ROUTES (AUTH REQUIRED)
 // ========================================
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     // ========== USER ROUTES ==========
     Route::get("/user/{id}", [UserController::class, "show_user"]);
     Route::get("/users", [UserController::class, "show_users"]);
@@ -79,24 +87,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('positions/{id}', [PositionController::class, 'update']);
     Route::delete('positions/{id}', [PositionController::class, 'delete']);
 
-    // ========== LETTER (SURAT IZIN) ROUTES ==========
-    Route::prefix('letters')->group(function () {
-        Route::get('/', [LetterController::class, 'index']);
-        Route::get('/formats', [LetterController::class, 'getAllFormats']);
-        Route::get('/{id}', [LetterController::class, 'show']);
-        Route::post('/', [LetterController::class, 'store']);
-        Route::put('/{id}/status', [LetterController::class, 'updateStatus']);
-        Route::delete('/{id}', [LetterController::class, 'destroy']);
-    });
 
     // ========== IZIN DASHBOARD ROUTES ==========
-    Route::prefix('izin')->group(function () {
-        Route::get('/dashboard', IzinDashboardController::class);
-        Route::get('/list', [IzinDashboardController::class, 'izinList']);
-        Route::get('/detail/{id}', [IzinDashboardController::class, 'IzinDetail']);
-        Route::post('/update/{id}', [IzinDashboardController::class, 'updateStatus']);
-        Route::get('/export-approved', [IzinDashboardController::class, 'exportApprovedLetters']);
-    });
+    Route::get('/izin-dashboard', IzinDashboardController::class)->middleware("auth:sanctum", );
+    Route::get('/izin-list', [IzinDashboardController::class, 'izinList'])->middleware("auth:sanctum", );
+    Route::get('/izin-detail/{id}', [IzinDashboardController::class, 'IzinDetail'])->middleware('auth:sanctum');
+    Route::post('/izin-update/{id}', [IzinDashboardController::class, 'updateStatus'])->middleware("auth:sanctum", );
+    Route::get('/export-approved-letters', [IzinDashboardController::class, 'exportApprovedLetters'])->middleware("auth:sanctum", );
 
     // ========== TEMPLATE SURAT ROUTES ==========
     Route::prefix('templates')->group(function () {

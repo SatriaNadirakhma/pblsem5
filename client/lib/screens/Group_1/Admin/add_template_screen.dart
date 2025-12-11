@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import 'package:client/utils/constant.dart';
+import 'package:client/services/add_template_service.dart';
 
 class AddTemplateScreen extends StatefulWidget {
   const AddTemplateScreen({super.key});
@@ -10,89 +9,156 @@ class AddTemplateScreen extends StatefulWidget {
 }
 
 class _AddTemplateScreenState extends State<AddTemplateScreen> {
+  final AddTemplateService _addTemplateService = AddTemplateService();
+  
   final TextEditingController nameController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool loading = false;
 
   @override
   void initState() {
     super.initState();
-
-    // langsung isi template default
-    contentController.text = _letterDefault();
+    
+    // Load default template content from service
+    contentController.text = _addTemplateService.getDefaultTemplateContent();
   }
 
-  // ======================================
-  // TEMPLATE DEFAULT — langsung di Flutter
-  // ======================================
-  String _letterDefault() {
-    return """
-SURAT IZIN {{NAMA SURAT}}
-
-Perihal: Izin {{Alasan}}
-Lampiran: -
-
-Kepada Yth. HRD
-Di 
-Tempat.
-
-Dengan hormat,
-
-Saya yang bertanda tangan di bawah ini:
-
-Nama        : {{first_name}} {{last_name}}
-Jabatan     : {{position}}
-Departemen  : {{department_name}}
-
-Bermaksud untuk mengajukan surat permohonan cuti tahunan pada tanggal [dd/mm/yyyy] hingga [dd/mm/yyyy].
-
-Demikian surat izin ini saya ajukan. Atas pengertiannya, saya ucapkan terima kasih.
-
-Hormat saya
-
-{{first_name}} {{last_name}}
-""";
+  @override
+  void dispose() {
+    nameController.dispose();
+    contentController.dispose();
+    super.dispose();
   }
 
-  // =============================
-  // SIMPAN TEMPLATE
-  // =============================
+  // ========================================
+  // SAVE TEMPLATE
+  // ========================================
   Future<void> saveTemplate() async {
-    if (nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Nama template wajib diisi")),
+    // Validate form
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Additional validation using service
+    final validation = _addTemplateService.validateTemplate(
+      name: nameController.text,
+      content: contentController.text,
+    );
+
+    if (validation['valid'] != true) {
+      _showSnackBar(
+        validation['message'] ?? 'Validasi gagal',
+        isError: true,
       );
       return;
     }
 
-    try {
-      setState(() => loading = true);
+    // Check if template name already exists
+    setState(() => loading = true);
+    final nameExists = await _addTemplateService.isTemplateNameExists(
+      nameController.text,
+    );
 
-      Dio dio = Dio();
-      final response = await dio.post(
-        "${Constant.apiUrl}/templates",
-        data: {
-          "name": nameController.text.trim(),
-          "content": contentController.text.trim(),
-        },
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.data["message"] ?? "Berhasil")),
-      );
-
-      Navigator.pop(context);
-    } catch (e) {
-      debugPrint("ERROR SAVE TEMPLATE: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal menyimpan template")),
-      );
-    } finally {
+    if (nameExists) {
       setState(() => loading = false);
+      _showSnackBar(
+        'Nama template sudah digunakan',
+        isError: true,
+      );
+      return;
+    }
+
+    // Confirm save
+    final confirm = await _showConfirmDialog();
+    if (confirm != true) {
+      setState(() => loading = false);
+      return;
+    }
+
+    try {
+      final result = await _addTemplateService.createTemplate(
+        name: nameController.text,
+        content: contentController.text,
+      );
+
+      if (mounted) {
+        _showSnackBar(
+          result['message'] ?? 'Template berhasil dibuat',
+          isError: !result['success'],
+        );
+
+        if (result['success']) {
+          // Wait a bit for snackbar to show
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            Navigator.pop(context, true); // Return true to indicate success
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("❌ ERROR SAVE TEMPLATE: $e");
+      
+      if (mounted) {
+        _showSnackBar(
+          "Gagal menyimpan template",
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
 
+  // ========================================
+  // SHOW CONFIRMATION DIALOG
+  // ========================================
+  Future<bool?> _showConfirmDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi'),
+        content: Text(
+          'Yakin ingin menyimpan template "${nameController.text}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00A8E8),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Ya, Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ========================================
+  // SHOW SNACKBAR
+  // ========================================
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ========================================
+  // BUILD UI
+  // ========================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,48 +167,112 @@ Hormat saya
         backgroundColor: const Color(0xFF00A8E8),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Nama Template",
-                border: OutlineInputBorder(),
-              ),
-            ),
 
-            const SizedBox(height: 20),
-
-            Expanded(
-              child: TextField(
-                controller: contentController,
-                maxLines: null,
-                expands: true,
+      body: Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // ========================================
+              // TEMPLATE NAME FIELD
+              // ========================================
+              TextFormField(
+                controller: nameController,
                 decoration: const InputDecoration(
-                  labelText: "Isi Template",
+                  labelText: "Nama Template",
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.title),
+                  hintText: 'Contoh: Surat Izin Sakit',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nama template tidak boleh kosong';
+                  }
+                  if (value.trim().length < 3) {
+                    return 'Nama template minimal 3 karakter';
+                  }
+                  if (value.trim().length > 100) {
+                    return 'Nama template maksimal 100 karakter';
+                  }
+                  return null;
+                },
+                enabled: !loading,
+              ),
+
+              const SizedBox(height: 20),
+
+              // ========================================
+              // TEMPLATE CONTENT FIELD
+              // ========================================
+              Expanded(
+                child: TextFormField(
+                  controller: contentController,
+                  maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  decoration: const InputDecoration(
+                    labelText: "Isi Template",
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Isi template tidak boleh kosong';
+                    }
+                    if (value.trim().length < 10) {
+                      return 'Isi template minimal 10 karakter';
+                    }
+                    return null;
+                  },
+                  enabled: !loading,
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: loading ? null : saveTemplate,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A8E8),
-                ),
-                child: Text(
-                  loading ? "Menyimpan..." : "Simpan",
-                  style: const TextStyle(color: Colors.white),
+              // ========================================
+              // SAVE BUTTON
+              // ========================================
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: loading ? null : saveTemplate,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00A8E8),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[300],
+                  ),
+                  child: loading
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Text("Menyimpan..."),
+                          ],
+                        )
+                      : const Text(
+                          "Simpan Template",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
-            )
-          ],
+            ],
+          ),
         ),
       ),
     );

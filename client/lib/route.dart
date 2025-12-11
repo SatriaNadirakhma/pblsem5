@@ -34,7 +34,7 @@ import 'package:client/screens/placeholder_screen.dart';
 final storage = FlutterSecureStorage();
 
 final GoRouter router = GoRouter(
-  initialLocation: "/",
+  initialLocation: "/login",
   redirect: (context, state) {
     return AuthService.instance.redirectUser(state);
   },
@@ -123,7 +123,7 @@ final GoRouter router = GoRouter(
             GoRoute(
               path: "/admin/template/edit",
               builder: (context, state) {
-                final data = state.extra as Map;
+                final data = state.extra as Map<String, dynamic>;
                 return EditTemplateScreen(template: data);
               },
             ),
