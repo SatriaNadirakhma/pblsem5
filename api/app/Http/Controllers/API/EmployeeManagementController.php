@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Helpers\ResponseWrapper;
 use App\Http\Controllers\Controller;
@@ -20,14 +20,14 @@ class EmployeeManagementController extends Controller
     public function update(Request $request, string $id)
     {
         $employee = Employee::find($id);
-        
+
         if (!$employee) {
             return ResponseWrapper::make(
                 "Karyawan tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
 
@@ -44,9 +44,12 @@ class EmployeeManagementController extends Controller
 
         try {
             $validated = $request->validate([
-                "employment_status" => "sometimes|required|in:aktif,cuti,resign,phk",
-                "position_id" => "sometimes|nullable|integer|exists:positions,id",
-                "department_id" => "sometimes|nullable|integer|exists:departments,id",
+                "employment_status" =>
+                    "sometimes|required|in:aktif,cuti,resign,phk",
+                "position_id" =>
+                    "sometimes|nullable|integer|exists:positions,id",
+                "department_id" =>
+                    "sometimes|nullable|integer|exists:departments,id",
             ]);
 
             DB::beginTransaction();
@@ -55,32 +58,30 @@ class EmployeeManagementController extends Controller
 
             DB::commit();
 
-            $employee->load(['user', 'position', 'department']);
+            $employee->load(["user", "position", "department"]);
 
             return ResponseWrapper::make(
                 "Data manajemen karyawan berhasil diperbarui",
                 200,
                 true,
                 ["employee" => $employee],
-                null
+                null,
             );
-
         } catch (ValidationException $e) {
             return ResponseWrapper::make(
                 "Validasi gagal",
                 422,
                 false,
                 null,
-                $e->errors()
+                $e->errors(),
             );
-
         } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error('Employee management update failed', [
-                'employee_id' => $employee->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Employee management update failed", [
+                "employee_id" => $employee->id,
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -88,7 +89,7 @@ class EmployeeManagementController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
         }
     }

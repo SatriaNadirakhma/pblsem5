@@ -19,6 +19,8 @@ class ChangePasswordService extends BaseService {
     );
     final json = response.data;
 
+    print(json);
+
     if (response.statusCode != 200) {
       log("Error: Change password failed: ${json['message']}");
       return ApiResponse(

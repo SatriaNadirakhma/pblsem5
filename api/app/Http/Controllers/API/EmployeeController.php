@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Helpers\ResponseWrapper;
 use App\Http\Controllers\Controller;
@@ -13,14 +13,14 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        $employees = Employee::with(['user', 'position', 'department'])->get();
-        
+        $employees = Employee::with(["user", "position", "department"])->get();
+
         return ResponseWrapper::make(
             "Daftar karyawan berhasil diambil",
             200,
             true,
             ["employees" => $employees],
-            null
+            null,
         );
     }
 
@@ -29,24 +29,26 @@ class EmployeeController extends Controller
      */
     public function show(string $id)
     {
-        $employee = Employee::with(['user', 'position', 'department'])->find($id);
-        
+        $employee = Employee::with(["user", "position", "department"])->find(
+            $id,
+        );
+
         if (!$employee) {
             return ResponseWrapper::make(
                 "Karyawan tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
-        
+
         return ResponseWrapper::make(
             "Data karyawan berhasil ditemukan",
             200,
             true,
             ["employee" => $employee],
-            null
+            null,
         );
     }
 }

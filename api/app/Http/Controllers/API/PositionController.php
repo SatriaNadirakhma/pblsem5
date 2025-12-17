@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Helpers\ResponseWrapper;
 use App\Http\Controllers\Controller;
@@ -20,13 +20,13 @@ class PositionController extends Controller
     public function index()
     {
         $positions = Position::all();
-        
+
         return ResponseWrapper::make(
             "Daftar posisi berhasil diambil",
             200,
             true,
             ["positions" => $positions],
-            null
+            null,
         );
     }
 
@@ -36,23 +36,23 @@ class PositionController extends Controller
     public function show(string $id)
     {
         $position = Position::find($id);
-        
+
         if (!$position) {
             return ResponseWrapper::make(
                 "Posisi tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
-        
+
         return ResponseWrapper::make(
             "Data posisi berhasil ditemukan",
             200,
             true,
             ["position" => $position],
-            null
+            null,
         );
     }
 
@@ -63,9 +63,9 @@ class PositionController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:100|unique:positions,name',
-                'rate_reguler' => 'required|numeric|min:0',
-                'rate_overtime' => 'required|numeric|min:0',
+                "name" => "required|string|max:100|unique:positions,name",
+                "rate_reguler" => "required|numeric|min:0",
+                "rate_overtime" => "required|numeric|min:0",
             ]);
 
             DB::beginTransaction();
@@ -79,24 +79,22 @@ class PositionController extends Controller
                 201,
                 true,
                 ["position" => $position],
-                null
+                null,
             );
-
         } catch (ValidationException $e) {
             return ResponseWrapper::make(
                 "Validasi gagal",
                 422,
                 false,
                 null,
-                $e->errors()
+                $e->errors(),
             );
-
         } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error('Position creation failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Position creation failed", [
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -104,7 +102,7 @@ class PositionController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
         }
     }
@@ -115,22 +113,24 @@ class PositionController extends Controller
     public function update(Request $request, string $id)
     {
         $position = Position::find($id);
-        
+
         if (!$position) {
             return ResponseWrapper::make(
                 "Posisi tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
 
         try {
             $validated = $request->validate([
-                'name' => 'sometimes|required|string|max:100|unique:positions,name,' . $position->id,
-                'rate_reguler' => 'sometimes|required|numeric|min:0',
-                'rate_overtime' => 'sometimes|required|numeric|min:0',
+                "name" =>
+                    "sometimes|required|string|max:100|unique:positions,name," .
+                    $position->id,
+                "rate_reguler" => "sometimes|required|numeric|min:0",
+                "rate_overtime" => "sometimes|required|numeric|min:0",
             ]);
 
             DB::beginTransaction();
@@ -144,25 +144,23 @@ class PositionController extends Controller
                 200,
                 true,
                 ["position" => $position],
-                null
+                null,
             );
-
         } catch (ValidationException $e) {
             return ResponseWrapper::make(
                 "Validasi gagal",
                 422,
                 false,
                 null,
-                $e->errors()
+                $e->errors(),
             );
-
         } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error('Position update failed', [
-                'position_id' => $position->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Position update failed", [
+                "position_id" => $position->id,
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -170,7 +168,7 @@ class PositionController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
         }
     }
@@ -181,27 +179,27 @@ class PositionController extends Controller
     public function destroy(string $id)
     {
         $position = Position::find($id);
-        
+
         if (!$position) {
             return ResponseWrapper::make(
                 "Posisi tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
 
         // Cek apakah posisi masih digunakan oleh karyawan
-        $isUsed = Employee::where('position_id', $id)->exists();
-        
+        $isUsed = Employee::where("position_id", $id)->exists();
+
         if ($isUsed) {
             return ResponseWrapper::make(
                 "Posisi tidak dapat dihapus karena masih digunakan oleh karyawan",
                 422, // Gunakan 422 untuk validation error
                 false,
                 null,
-                ["error" => "Position is still in use by employees"]
+                ["error" => "Position is still in use by employees"],
             );
         }
 
@@ -217,27 +215,27 @@ class PositionController extends Controller
                 200,
                 true,
                 null,
-                null
+                null,
             );
-
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
-            
+
             // Tangkap error foreign key constraint
-            if ($e->getCode() == 23000) { // SQL integrity constraint violation
+            if ($e->getCode() == 23000) {
+                // SQL integrity constraint violation
                 return ResponseWrapper::make(
                     "Posisi tidak dapat dihapus karena masih digunakan oleh karyawan",
                     422,
                     false,
                     null,
-                    ["error" => "Foreign key constraint violation"]
+                    ["error" => "Foreign key constraint violation"],
                 );
             }
 
-            Log::error('Position deletion failed', [
-                'position_id' => $position->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Position deletion failed", [
+                "position_id" => $position->id,
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -245,16 +243,15 @@ class PositionController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
-
         } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error('Position deletion failed', [
-                'position_id' => $position->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Position deletion failed", [
+                "position_id" => $position->id,
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -262,7 +259,7 @@ class PositionController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
         }
     }

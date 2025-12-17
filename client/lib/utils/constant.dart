@@ -1,3 +1,3 @@
 class Constant {
-  static String apiUrl = "https://boss-bee-noted.ngrok-free.app/api";
+  static String apiUrl = "http://10.0.2.2/api";
 }

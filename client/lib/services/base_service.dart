@@ -10,6 +10,7 @@ class BaseService<T> {
       contentType: "application/json",
       baseUrl: Constant.apiUrl,
       headers: Map.from({"accept": "application/json"}),
+      validateStatus: (_) => true,
     ),
   );
 

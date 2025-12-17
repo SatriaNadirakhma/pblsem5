@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Helpers\ResponseWrapper;
 use App\Http\Controllers\Controller;
@@ -19,13 +19,13 @@ class DepartmentController extends Controller
     public function index()
     {
         $departments = Department::all();
-        
+
         return ResponseWrapper::make(
             "Daftar departemen berhasil diambil",
             200,
             true,
             ["departments" => $departments],
-            null
+            null,
         );
     }
 
@@ -36,10 +36,10 @@ class DepartmentController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => 'required|string|max:100|unique:departments,name',
-                'latitude' => 'required|numeric|between:-90,90',
-                'longitude' => 'required|numeric|between:-180,180',
-                'radius_meters' => 'required|integer|min:1|max:10000',
+                "name" => "required|string|max:100|unique:departments,name",
+                "latitude" => "required|numeric|between:-90,90",
+                "longitude" => "required|numeric|between:-180,180",
+                "radius_meters" => "required|integer|min:1|max:10000",
             ]);
 
             DB::beginTransaction();
@@ -53,24 +53,22 @@ class DepartmentController extends Controller
                 201,
                 true,
                 ["department" => $department],
-                null
+                null,
             );
-
         } catch (ValidationException $e) {
             return ResponseWrapper::make(
                 "Validasi gagal",
                 422,
                 false,
                 null,
-                $e->errors()
+                $e->errors(),
             );
-
         } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error('Department creation failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Department creation failed", [
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -78,7 +76,7 @@ class DepartmentController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
         }
     }
@@ -89,23 +87,23 @@ class DepartmentController extends Controller
     public function show(string $id)
     {
         $department = Department::find($id);
-        
+
         if (!$department) {
             return ResponseWrapper::make(
                 "Departemen tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
-        
+
         return ResponseWrapper::make(
             "Data departemen berhasil ditemukan",
             200,
             true,
             ["department" => $department],
-            null
+            null,
         );
     }
 
@@ -115,23 +113,25 @@ class DepartmentController extends Controller
     public function update(Request $request, string $id)
     {
         $department = Department::find($id);
-        
+
         if (!$department) {
             return ResponseWrapper::make(
                 "Departemen tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
 
         try {
             $validated = $request->validate([
-                'name' => 'sometimes|required|string|max:100|unique:departments,name,' . $department->id,
-                'latitude' => 'sometimes|required|numeric|between:-90,90',
-                'longitude' => 'sometimes|required|numeric|between:-180,180',
-                'radius_meters' => 'sometimes|required|integer|min:1|max:10000',
+                "name" =>
+                    "sometimes|required|string|max:100|unique:departments,name," .
+                    $department->id,
+                "latitude" => "sometimes|required|numeric|between:-90,90",
+                "longitude" => "sometimes|required|numeric|between:-180,180",
+                "radius_meters" => "sometimes|required|integer|min:1|max:10000",
             ]);
 
             DB::beginTransaction();
@@ -145,25 +145,23 @@ class DepartmentController extends Controller
                 200,
                 true,
                 ["department" => $department],
-                null
+                null,
             );
-
         } catch (ValidationException $e) {
             return ResponseWrapper::make(
                 "Validasi gagal",
                 422,
                 false,
                 null,
-                $e->errors()
+                $e->errors(),
             );
-
         } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error('Department update failed', [
-                'department_id' => $department->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Department update failed", [
+                "department_id" => $department->id,
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -171,7 +169,7 @@ class DepartmentController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
         }
     }
@@ -182,14 +180,14 @@ class DepartmentController extends Controller
     public function destroy(string $id)
     {
         $department = Department::find($id);
-        
+
         if (!$department) {
             return ResponseWrapper::make(
                 "Departemen tidak ditemukan",
                 404,
                 false,
                 null,
-                null
+                null,
             );
         }
 
@@ -205,16 +203,15 @@ class DepartmentController extends Controller
                 200,
                 true,
                 null,
-                null
+                null,
             );
-
         } catch (Throwable $e) {
             DB::rollBack();
 
-            Log::error('Department deletion failed', [
-                'department_id' => $department->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::error("Department deletion failed", [
+                "department_id" => $department->id,
+                "error" => $e->getMessage(),
+                "trace" => $e->getTraceAsString(),
             ]);
 
             return ResponseWrapper::make(
@@ -222,7 +219,7 @@ class DepartmentController extends Controller
                 500,
                 false,
                 null,
-                ["error" => "Internal server error"]
+                ["error" => "Internal server error"],
             );
         }
     }
